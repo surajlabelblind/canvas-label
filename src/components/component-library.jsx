@@ -1,8 +1,9 @@
 "use client";
 
-import { useDrag } from "react-dnd";
 
-const FOOD_LABEL_COMPONENTS = [
+import { useDraggable } from "@dnd-kit/core";
+
+export const FOOD_LABEL_COMPONENTS = [
   { type: "food-name", label: "Food Name", category: "Basic Info" },
   { type: "veg-nonveg", label: "Veg/Non-Veg", category: "Basic Info" },
   { type: "milk-logo", label: "Milk Logo", category: "Logos" },
@@ -92,20 +93,23 @@ function Badge({ children, variant = "default", className = "" }) {
 }
 
 function DraggableComponent({ type, label }) {
-  const [{ isDragging }, drag] = useDrag(() => ({
-    type: "component",
-    item: { type, label },
-    collect: (monitor) => ({
-      isDragging: monitor.isDragging(),
-    }),
-  }));
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: type,
+    data: { type, label },
+  });
+
+
+  const style = {
+    opacity: isDragging ? 0.5 : 1,
+  };
 
   return (
     <div
-      ref={drag}
-      className={`p-3 bg-white border border-gray-200 rounded-md cursor-move hover:bg-gray-50 hover:border-gray-300 transition-colors ${
-        isDragging ? "opacity-50" : ""
-      }`}
+      ref={setNodeRef}
+      style={style}
+      {...listeners}
+      {...attributes}
+      className="p-3 bg-white border border-gray-200 rounded-md cursor-move hover:bg-gray-50 hover:border-gray-300 transition-colors"
     >
       <div className="text-sm font-medium text-gray-900">{label}</div>
     </div>

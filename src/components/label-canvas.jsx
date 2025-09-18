@@ -1,103 +1,65 @@
 "use client";
 
-import { useRef } from "react";
-import { useDrop } from "react-dnd";
+import { useDroppable } from "@dnd-kit/core";
 import { Card } from "./component-library";
-import { DroppableComponent } from "./droppable-component";
+import { CanvasItem } from "./droppable-component"; // Import the new component
 
 export function LabelCanvas({
   dimensions,
   droppedComponents,
-  onDrop,
   onComponentUpdate,
   onComponentDelete,
 }) {
-  const canvasRef = useRef(null);
 
-  // Convert mm to pixels (assuming 96 DPI: 1mm ≈ 3.78px)
+  console.log("droppedComponents", droppedComponents);
+  
+  // Convert mm to pixels
   const mmToPx = (mm) => mm * 3.78;
-
   const canvasWidth = mmToPx(dimensions.width);
   const canvasHeight = mmToPx(dimensions.height);
 
-  const [{ isOver }, drop] = useDrop(() => ({
-    accept: "component",
-    drop: (item, monitor) => {
-      const offset = monitor.getDropResult() || monitor.getClientOffset();
-      if (!offset || !canvasRef.current) return;
-
-      const canvasRect = canvasRef.current.getBoundingClientRect();
-      const x = offset.x - canvasRect.left;
-      const y = offset.y - canvasRect.top;
-
-      // Ensure the component stays within canvas bounds
-      const componentWidth = 120;
-      const componentHeight = 40;
-      const clampedX = Math.max(0, Math.min(x, canvasWidth - componentWidth));
-      const clampedY = Math.max(0, Math.min(y, canvasHeight - componentHeight));
-
-      onDrop({
-        type: item.type,
-        x: clampedX,
-        y: clampedY,
-        width: componentWidth,
-        height: componentHeight,
-        content: item.label,
-      });
-    },
-    collect: (monitor) => ({
-      isOver: monitor.isOver(),
-    }),
-  }));
+  // Set up the canvas as a droppable area for Dnd Kit
+  const { setNodeRef } = useDroppable({
+    id: 'canvas-droppable-area',
+  });
 
   return (
     <div className="flex flex-col items-center">
       <div className="mb-4 text-center">
-        <h2 className="text-lg font-semibold text-foreground">
+        <h2 className="text-lg font-semibold">
           Label Canvas ({dimensions.width}mm × {dimensions.height}mm)
         </h2>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-gray-500">
           Drag components from the sidebar to design your label
         </p>
       </div>
 
       <Card className="p-4 bg-white shadow-lg">
         <div
-          ref={(node) => {
-            drop(node);
-            canvasRef.current = node;
-          }}
-          className={`relative border-2 border-dashed bg-white transition-colors ${
-            isOver ? "border-accent bg-accent/5" : "border-border"
-          }`}
+          id="canvas-droppable-area" // Give it an ID to calculate drop position
+          ref={setNodeRef} // Use the ref from Dnd Kit
+          className="relative bg-white border-2 border-dashed"
           style={{
             width: `${canvasWidth}px`,
             height: `${canvasHeight}px`,
-            minWidth: "200px",
-            minHeight: "150px",
           }}
         >
           {/* Grid overlay */}
           <div
             className="absolute inset-0 opacity-10 pointer-events-none"
             style={{
-              backgroundImage: `
-                linear-gradient(to right, #000 1px, transparent 1px),
-                linear-gradient(to bottom, #000 1px, transparent 1px)
-              `,
+              backgroundImage: `linear-gradient(to right, #000 1px, transparent 1px), linear-gradient(to bottom, #000 1px, transparent 1px)`,
               backgroundSize: "20px 20px",
             }}
           />
 
-          {/* Dropped components */}
+          {/* Dropped components now use CanvasItem */}
           {droppedComponents.map((component) => (
-            <DroppableComponent
+            <CanvasItem
               key={component.id}
               component={component}
-              canvasWidth={canvasWidth}
-              canvasHeight={canvasHeight}
-              onUpdate={(updates) => onComponentUpdate(component.id, updates)}
-              onDelete={() => onComponentDelete(component.id)}
+              onUpdate={onComponentUpdate}
+              onDelete={onComponentDelete}
             />
           ))}
 
